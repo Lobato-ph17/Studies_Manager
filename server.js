@@ -1,70 +1,22 @@
 const express = require("express");
-
 const app = express();
+const estudoRoutes = require('./src/routes/estudoRoutes');
 
-let registrosDeEstudo = [];
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "Bem vindo à API do Studies Manager",
-    status: "Online",
-    version: "1.0.0",
-  });
-});
+app.use('/', estudoRoutes);
 
-app.post("/estudos", (req, res) => {
-  const { materia, horas } = req.body;
+const PORT = 3000;
 
-  if (typeof horas !== "number" || horas <= 0) {
-    return res.status(400).json({
-      error: "Horas inválidas. Insira um número maior que 0",
-    });
-  }
+const mongoose = require('mongoose');
 
-  const novoRegistro = {
-    id: registrosDeEstudo.length + 1,
-    materia,
-    horas,
-    data: new Date(),
-  };
+const dbURI = "mongodb+srv://lobato-ph17:roronoa-op15@lobato-ph17.mw00jnd.mongodb.net/?appName=lobato-ph17";
 
-  registrosDeEstudo.push(novoRegistro);
+mongoose.connect(dbURI)
+    .then(() => console.log("🔥 Conectado ao MongoDB Atlas com sucesso!"))
+    .catch((err) => console.error("❌ Erro ao conectar ao MongoDB:", err))
 
-  res.status(201).json(novoRegistro);
-});
-
-app.get("/estudos", (req, res) => {
-  res.json(registrosDeEstudo);
-});
-
-app.get("/estudos/total", (req, res) => {
-  let somaHoras = 0;
-
-  registrosDeEstudo.forEach((registro) => {
-    somaHoras += registro.horas;
-  });
-
-  res.json({
-    mensagem: "Cálculo de Horas totais realizado",
-    total: somaHoras,
-    quantidade_de_sessoes: registrosDeEstudo.length,
-  });
-});
-
-app.delete('/estudos/:id', (req,res) => {
-
-  const idParaDeletar = Number(req.params.id);
-
-  registrosDeEstudo = registrosDeEstudo.filter(reg => reg.id !== idParaDeletar);
-
-  res.json({
-      message: `Registro com ID ${idParaDeletar} removido com sucesso!`,
-      total_atual: registrosDeEstudo.length
-  })
-})
-
-app.listen(3000, () => {
-  console.log("Estamos on! Servidor rodando em http://localhost:3000");
+app.listen(PORT, () => {
+  console.log(`Estamos on! Servidor rodando em http://localhost: ${PORT}`);
 });
