@@ -13,12 +13,17 @@
         <div class="card">
             <h2>Novo Registro</h2>
             <input type="text" id="materia" placeholder="O que você estudou?">
-            <input type="number" id="horas" placeholder="Quantas Horas?">
+
+            <div style = "display: flex; gap: 10px; margin-top: 10px;">
+                <input type="number" id="horas" placeholder="Horas" min="0" style="flex:1;">
+                <input type="number" id="minutos" placeholder="Minutos" min="0" max="59" style="flex:1;">
+            </div>
+
             <button onclick="salvarEstudo()">Salvar Estudo</button>
         </div>
 
         <div class="stats">
-            <p>Total de Horas: <span id="totalHoras">0</span>h</p>
+            <p>Total de Horas: <span id="totalHoras">00:00</span>h</p>
         </div>
 
         <ul id="listaEstudos"></ul>

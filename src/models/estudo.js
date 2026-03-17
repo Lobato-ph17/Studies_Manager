@@ -7,7 +7,7 @@ const estudoSchema = new mongoose.Schema({
         required: true, 
         trim: true
     },
-    horas: {
+    minutos: {
         type: Number,
         required: true,
         min: 0.1

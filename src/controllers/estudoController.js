@@ -9,24 +9,6 @@ exports.boasVindas = (req, res) => {
   });
 };
 
-exports.criarRegistro = async (req, res) => {
-  try {
-    const { materia, horas } = req.body;
-
-    const novoRegistro = await Estudo.create({
-      materia,
-      horas,
-    });
-
-    res.status(201).json(novoRegistro);
-  } catch (error) {
-    res.status(400).json({
-      error: "Error ao salvar no MongoDB",
-      detalhes: error.message,
-    });
-  }
-};
-
 exports.listarTodos = async (req, res) => {
   try {
     const estudos = await Estudo.find();
@@ -54,7 +36,7 @@ exports.deletarRegistro = async (req, res) => {
   try {
     const idParaDeletar = req.params.id;
 
-    const deletado = await estudo.findByIdAndDelete(idParaDeletar);
+    const deletado = await Estudo.findByIdAndDelete(idParaDeletar);
 
     if (!deletado) {
       return res.status(404).json({ message: "Registro não encontrado!" });
@@ -78,16 +60,23 @@ exports.getStats = async (req,res) => {
           materiasMaisEstudadas: { $addToSet: "$materia"}
         }
       }
-    ])
-    res.json(stats[0] || {totalHoras: 0, materiasMaisEstudadas: []});
+    ]);
+    console.log("Estatística Calculadas: ", stats)
+    const resultado = stats.length > 0 ? stats[0] : {totalHoras: 0};
+
+    res.json({
+      total: resultado.totalHoras,
+      ranking: []
+    });
   } catch(error){
-    res.status(500).json({error: "Erro ao processar as estatísicas"})
+    console.error(error);
+    res.status(500).json({message: "Erro ao calcular horas"})
   }
 }
 
 const estudoSchema = z.object({
     materia: z.string().min(2, "A matéria deve ter pelo menos 2 caracteres"),
-    horas: z.number().positive("As horas devem ser um número maior do que zero"),
+    minutos: z.number().positive("Os minutos devem ser um número maior do que zero"),
     data: z.string().optional()
 });
 
@@ -95,9 +84,27 @@ exports.criarRegistro = async (req,res) => {
     try{
       const dadosValidados = estudoSchema.parse(req.body);
 
-      const novoEstudo = new Estudo(dadosValidados);
-      await novoEstudo.save();
-      
+      const hojeInicio = new Date();
+      hojeInicio.setHours(0,0,0,0);
+
+      const hojeFim = new Date();
+      hojeFim.setHours(23,59,59,999);
+
+      const estudoProcessado = await Estudo.findOneAndUpdate(
+        {
+          materia: dadosValidados.materia,
+          data: {$gte: hojeInicio, $lte: hojeFim}
+        },
+        {
+          $inc: {minutos: dadosValidados.minutos},
+          $set: {data: new Date()}
+        },
+        {
+          upsert: true,
+          new: true
+        }
+      );
+
       res.status(201).json(novoEstudo);
     } catch(error) {
 
@@ -110,3 +117,26 @@ exports.criarRegistro = async (req,res) => {
       res.status(500).json({error: "Erro Interno"});
     }
 }
+
+
+
+
+
+
+// exports.criarRegistro = async (req, res) => {
+//   try {
+//     const { materia, horas } = req.body;
+
+//     const novoRegistro = await Estudo.create({
+//       materia,
+//       horas,
+//     });
+
+//     res.status(201).json(novoRegistro);
+//   } catch (error) {
+//     res.status(400).json({
+//       error: "Error ao salvar no MongoDB",
+//       detalhes: error.message,
+//     });
+//   }
+// };

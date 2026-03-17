@@ -1,5 +1,11 @@
 const API_URL = "http://localhost:3000/estudos";
 
+function formatarTempo(minutosTotais) {
+  const h = Math.floor(minutosTotais / 60);
+  const m = minutosTotais % 60;
+  return `${String(h).padStart(2, '0')}: ${String(m).padStart(2, '0')}`;
+}
+
 async function carregarEstudos() {
   try{
     const res = await fetch(API_URL);
@@ -8,14 +14,7 @@ async function carregarEstudos() {
     const estudos = await res.json();
     const stats = await resTotal.json();
 
-    console.log("Dados Recebidos: ", {estudos, stats});
-
-    if(!Array.isArray(estudos)) {
-      console.error("Esperava  uma lista de estudos, mas recebi: ", estudos);
-      return;
-    }
-    
-    document.getElementById("totalHoras").innerText = stats.total !== undefined ? stats.total : 0;
+    document.getElementById("totalHoras").innerText = formatarTempo(stats.total || 0);
 
     const lista = document.getElementById("listaEstudos");
     if(!lista) return;
@@ -35,14 +34,23 @@ async function carregarEstudos() {
     });
 
     for (const data in estudosAgrupados) {
-      lista.innerHTML += `<h3 class="data-group" style="margin-top: 20px; color: var(--primary); border-bottom: 1px solid #334155;">📅 ${data}</h3>`;
+      const totalMinutosDia = estudosAgrupados[data].reduce((acc, est) => acc + (est.minutos || 0), 0);
+
+      lista.innerHTML += 
+        `<h3 class="data-group" style="margin-top: 20px; color: var(--primary); border-bottom: 1px solid #334155; display: flex; justify-content: space-between;">
+            <span>📅 ${data}</span>
+            <span style="font-size: 0.9rem; opacity: 0.7;">Total: ${formatarTempo(totalMinutosDia)}h</span>
+        </h3>`;
 
       estudosAgrupados[data].forEach((estudo) => {
+
+        const tempoIndividual = formatarTempo(estudo.minutos || 0);
+
         lista.innerHTML += `
               <li>
                   <div>
                       <strong>${estudo.materia}</strong>
-                      <span class"horas-tag" style="color: #94a3b8; margin-left: 10px;">${estudo.horas}h</span>
+                      <span class"horas-tag" style="color: #94a3b8; margin-left: 10px;">${tempoIndividual}h</span>
                   </div>
                   <button class = "btn-delete" onclick="deletarEstudo('${estudo._id}')">Excluir</button>
               </li>
@@ -57,30 +65,55 @@ async function carregarEstudos() {
 async function salvarEstudo() {
   const materiaEl = document.getElementById("materia");
   const horasEl = document.getElementById("horas");
+  const minutosEl = document.getElementById("minutos");
 
   const materia = materiaEl.value;
-  const horas = Number(horasEl.value);
+  const h = parseInt(horasEl.value) || 0;
+  const m = parseInt(minutosEl.value) || 0;
 
-  const data = new Date().toISOString().split("T")[0];
+  const minutosTotais = (h * 60) + m;
 
-  if (!materia || !horas || horas <= 0) {
+
+  if (!materia || minutosTotais <= 0) {
     return alert("Preencha todos os campos!!");
   }
 
-  await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ materia, horas, data }),
-  });
 
-  materiaEl.value = "";
-  horasEl.value = "";
-  carregarEstudos();
+try{
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+         materia: materia,
+         minutos: minutosTotais }),
+    });
+
+    materiaEl.value = "";
+    horasEl.value = "";
+    minutosEl.value = "";
+    carregarEstudos();
+} catch(error){
+  alert("Erro ao salvar o estudo");
+}
 }
 
 async function deletarEstudo(id) {
-  await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-  carregarEstudos();
+  const confirmacao = window.confirm("Tem certeza que deseja excluir esse item?")
+
+  if(confirmacao){
+    try{
+    const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+
+    if(response.ok){
+      carregarEstudos();
+    } else {
+      const error = await response.json();
+      alert("Erro ao excluir o estudo" + (erro.message || "Erro Desconhecido"))
+    }
+    } catch (error){
+      console.error("Erro na requisição de delete: ", error)
+    }
+  }
 }
 
 carregarEstudos();
