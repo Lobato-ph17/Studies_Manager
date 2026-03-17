@@ -6,8 +6,9 @@ const estudoRoutes = require("./src/routes/estudoRoutes");
 app.use(express.json());
 app.use(cors());
 
-app.use("/", estudoRoutes);
 app.use(express.static("public"));
+app.use("/estudos", estudoRoutes);
+
 
 const PORT = 3000;
 

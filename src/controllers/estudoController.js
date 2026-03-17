@@ -1,5 +1,5 @@
-const estudo = require("../models/estudo");
 const Estudo = require("../models/estudo");
+const { z } = require("zod");
 
 exports.boasVindas = (req, res) => {
   res.json({
@@ -67,3 +67,46 @@ exports.deletarRegistro = async (req, res) => {
     res.status(400).json({ message: "ID enviado é inválido " });
   }
 };
+
+exports.getStats = async (req,res) => {
+  try{
+    const stats = await Estudo.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalHoras: {$sum: "$horas"},
+          materiasMaisEstudadas: { $addToSet: "$materia"}
+        }
+      }
+    ])
+    res.json(stats[0] || {totalHoras: 0, materiasMaisEstudadas: []});
+  } catch(error){
+    res.status(500).json({error: "Erro ao processar as estatísicas"})
+  }
+}
+
+const estudoSchema = z.object({
+    materia: z.string().min(2, "A matéria deve ter pelo menos 2 caracteres"),
+    horas: z.number().positive("As horas devem ser um número maior do que zero"),
+    data: z.string().optional()
+});
+
+exports.criarRegistro = async (req,res) => {
+    try{
+      const dadosValidados = estudoSchema.parse(req.body);
+
+      const novoEstudo = new Estudo(dadosValidados);
+      await novoEstudo.save();
+      
+      res.status(201).json(novoEstudo);
+    } catch(error) {
+
+      if(error instanceof z.ZodError){
+        return res.status(400).json({
+          mensagem: "Dados Inválidos",
+          detalhes: error.erros.map(err => err.message)
+        });
+      }
+      res.status(500).json({error: "Erro Interno"});
+    }
+}
