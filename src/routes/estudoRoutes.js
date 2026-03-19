@@ -8,10 +8,8 @@ router.post("/", estudoController.criarRegistro);
 
 router.get("/", estudoController.listarTodos);
 
-router.get("/estudos/total", estudoController.calcularTotal);
+router.get("/total", estudoController.getStats);
 
 router.delete("/:id", estudoController.deletarRegistro);
-
-router.get("/total", estudoController.getStats);
 
 module.exports = router;

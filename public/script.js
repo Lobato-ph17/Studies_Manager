@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/estudos";
+const API_URL = "http://localhost:5000/estudos";
 
 function formatarTempo(minutosTotais) {
   const h = Math.floor(minutosTotais / 60);
@@ -12,6 +12,10 @@ async function carregarEstudos() {
     const resTotal = await fetch(`${API_URL}/total`);
 
     const estudos = await res.json();
+    if (!Array.isArray(estudos)) {
+    console.error("Resposta inesperada:", estudos);
+    return;
+}
     const stats = await resTotal.json();
 
     document.getElementById("totalHoras").innerText = formatarTempo(stats.total || 0);
@@ -85,7 +89,7 @@ try{
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
          materia: materia,
-         minutos: minutosTotais }),
+         tempo: minutosTotais }),
     });
 
     materiaEl.value = "";
